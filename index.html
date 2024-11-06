@@ -1,44 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Đoán Số</title>
+  <title>Bắt Chữ Cái Rơi</title>
   <meta charset="UTF-8">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
+      overflow: hidden; /* Ngăn chữ cái rơi ra khỏi màn hình */
+      background-color: #f0f0f0;
+    }
+
+    #game-container {
+      width: 400px;
+      height: 300px;
+      margin: 50px auto;
+      background-color: #fff;
+      border: 2px solid #ccc;
+      position: relative; /* Để định vị chữ cái bên trong */
+    }
+
+    .letter {
+      position: absolute;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
     }
   </style>
 </head>
 <body>
-  <h1>Đoán Số (1-100)</h1>
-  <input type="number" id="guess" min="1" max="100">
-  <button onclick="checkGuess()">Đoán</button>
-  <p id="message"></p>
+  <h1>Bắt Chữ Cái Rơi</h1>
+  <div id="game-container"></div>
+  <p>Điểm: <span id="score">0</span></p>
 
   <script>
-    // Khởi tạo biến
-    let secretNumber = Math.floor(Math.random() * 100) + 1;
-    let numGuesses = 0;
+    const container = document.getElementById('game-container');
+    const scoreDisplay = document.getElementById('score');
+    let score = 0;
+    let letters = [];
 
-    function checkGuess() {
-      const guess = parseInt(document.getElementById("guess").value);
-      const message = document.getElementById("message");
-      numGuesses++;
-
-      if (guess === secretNumber) {
-        message.innerHTML = `Chúc mừng! Bạn đã đoán đúng số ${secretNumber} trong ${numGuesses} lần đoán.`;
-        Telegram.WebApp.sendMessage(`Tôi đã thắng trò chơi Đoán Số trong ${numGuesses} lần!`);
-        // Reset game
-        secretNumber = Math.floor(Math.random() * 100) + 1;
-        numGuesses = 0;
-      } else if (guess < secretNumber) {
-        message.innerHTML = "Số của bạn quá thấp!";
-      } else {
-        message.innerHTML = "Số của bạn quá cao!";
-      }
+    function createLetter() {
+      const letter = document.createElement('div');
+      letter.classList.add('letter');
+      letter.textContent = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // Random chữ cái A-Z
+      letter.style.left = `${Math.random() * (container.offsetWidth - 30)}px`; // Vị trí ngẫu nhiên
+      container.appendChild(letter);
+      letters.push({ element: letter, top: 0, speed: Math.random() * 3 + 1 }); // Lưu trữ thông tin chữ cái
     }
+
+    function updateLetters() {
+      letters.forEach((letter, index) => {
+        letter.top += letter.speed;
+        letter.element.style.top = `${letter.top}px`;
+
+        // Kiểm tra va chạm đáy
+        if (letter.top > container.offsetHeight) {
+          container.removeChild(letter.element);
+          letters.splice(index, 1);
+          createLetter(); // Tạo chữ cái mới
+        }
+      });
+    }
+
+    function checkLetter(event) {
+      const key = event.key.toUpperCase();
+      letters.forEach((letter, index) => {
+        if (letter.element.textContent === key) {
+          container.removeChild(letter.element);
+          letters.splice(index, 1);
+          score++;
+          scoreDisplay.textContent = score;
+          createLetter(); // Tạo chữ cái mới
+        }
+      });
+    }
+
+    // Khởi tạo game
+    for (let i = 0; i < 3; i++) {
+      createLetter();
+    }
+
+    setInterval(updateLetters, 30); // Cập nhật vị trí chữ cái
+    document.addEventListener('keydown', checkLetter); // Lắng nghe sự kiện bàn phím
 
     // Mở rộng web app khi bắt đầu
     Telegram.WebApp.ready();
